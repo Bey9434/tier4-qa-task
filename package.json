@@ -1,0 +1,15 @@
+{
+  "name": "tier4-qa-task",
+  "version": "1.0.0",
+  "description": "Practice Software Testing を対象とした E2E テスト自動化課題（Playwright + TypeScript）",
+  "private": true,
+  "scripts": {
+    "test": "playwright test"
+  },
+  "packageManager": "pnpm@10.28.2",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3"
+  }
+}
