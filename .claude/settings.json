@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install*)",
+      "Bash(pnpm exec playwright test*)",
+      "Bash(pnpm exec playwright install*)",
+      "Bash(pnpm exec tsc --noEmit)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm format*)",
+      "Bash(pnpm test*)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr status*)",
+      "Bash(gh pr checks*)",
+      "Bash(gh pr diff*)",
+      "Bash(gh issue view*)",
+      "Bash(gh issue list*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git status*)",
+      "Bash(git branch*)",
+      "Bash(git ls-files *)",
+      "Bash(git switch *)",
+      "Bash(ls *)",
+      "Bash(rm test-results/*)",
+      "Bash(rm playwright-report/*)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(rm -r *)",
+      "Bash(rm -R *)",
+      "Bash(rm -fr *)",
+      "Bash(rm -fR *)",
+      "Bash(rm --recursive *)",
+      "Bash(*git add*.env.keys*)",
+      "Read(.env.keys)",
+      "Bash(*cat*.env.keys*)",
+      "Bash(*less*.env.keys*)",
+      "Bash(*head*.env.keys*)",
+      "Bash(*tail*.env.keys*)",
+      "Bash(*grep*.env.keys*)",
+      "Bash(echo $*PASSWORD*)",
+      "Bash(echo $*SECRET*)",
+      "Bash(echo $*TOKEN*)",
+      "Bash(echo $*PRIVATE*)",
+      "Bash(printenv*PASSWORD*)",
+      "Bash(printenv*SECRET*)",
+      "Bash(printenv*TOKEN*)",
+      "Bash(printenv*PRIVATE*)",
+      "Bash(printenv)",
+      "Bash(printenv *)",
+      "Bash(env)",
+      "Bash(env *)",
+      "Bash(*env*|*)",
+      "Bash(*env*> *)",
+      "Bash(node -e*)",
+      "Bash(node --eval*)",
+      "Bash(python3 -c*)",
+      "Bash(python -c*)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(git checkout *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit-format.sh\"",
+            "timeout": 15,
+            "statusMessage": "prettier / eslint 自動整形中"
+          }
+        ]
+      }
+    ]
+  }
+}
