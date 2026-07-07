@@ -59,10 +59,7 @@
       "Bash(python3 -c*)",
       "Bash(python -c*)"
     ],
-    "ask": [
-      "Bash(git push *)",
-      "Bash(git checkout *)"
-    ]
+    "ask": ["Bash(git push *)", "Bash(git checkout *)"]
   },
   "hooks": {
     "PostToolUse": [

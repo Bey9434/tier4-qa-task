@@ -1,0 +1,8 @@
+# 依存関係
+node_modules/
+
+# Playwright 生成物（整形対象外）
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
