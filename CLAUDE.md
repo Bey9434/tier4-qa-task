@@ -17,7 +17,9 @@
 - **Functional POM**: `pages/` は関数エクスポートのみ。クラス禁止。引数は `Readonly<Page>`
 - ロケーター優先順位: `getByRole` > `getByLabel` > `getByPlaceholder` > `getByTestId`（`data-test` 属性）> `getByText`
 - 依存方向は `tests/` → `pages/` の一方通行。spec 内での `page.locator()` 直書き禁止
-- コード内コメントは Why（なぜそうしたか）のみ書く。ロケーター選定理由・待機戦略・テストデータの根拠は必ずコメントに残す
+- 情報の書き分け: **コード=How / テストコード=What / コミットログ=Why / コードコメント=Why not**（なぜ当然の選択肢を採らなかったか）。
+  コードコメントに How の言い換えや API 名の翻訳を書かない。却下した代替・回避した罠・非自明な制約に絞る。
+  ロケーター選定理由・待機戦略・テストデータの根拠は Why not として必ず残す。コメントは self-contained にし、外部メモを読まないと意味が取れない語彙は書かない
 
 ## 絶対禁止
 
