@@ -86,8 +86,8 @@ export default tseslint.config(
     files: ["tests/**/*.spec.ts", "pages/**/*.ts"],
     rules: {
       ...playwright.configs["flat/recommended"].rules,
-      // テスト本文はクリック・入力など戻り値のない操作の連続のため、pages 用の
-      // 関数型ルールをテストファイルでは解除する
+      // tests / pages ともクリック・入力など戻り値のない操作が連続するため、
+      // この 2 つの関数型ルールは両方で解除する
       "functional/no-return-void": "off",
       "functional/no-expression-statements": "off",
 
