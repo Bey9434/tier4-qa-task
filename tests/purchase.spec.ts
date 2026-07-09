@@ -29,8 +29,7 @@ const addressInput: AddressInput = {
   houseNumber: "1",
 };
 
-// アプリが決定的に自動補完する値（現実の地理とは無関係）。注文確定 API は
-// この値と国コード+郵便番号の照合が一致しないと 422 になるため変更しない
+// アプリが郵便番号から生成する架空の住所。注文確定 API がこの値を照合するため変更しない
 const expectedAutoFill = {
   street: "Eckertplatz",
   city: "Heidenheim an der Brenz",
@@ -42,7 +41,6 @@ test.describe("TC-002: 商品購入ジャーニー", () => {
     page,
     request,
   }) => {
-    // 共有アカウントのロック競合を避けるため、このテスト専用のアカウントを登録して使う
     const account = await registerAccount(request);
 
     await test.step("Arrange: ホームから商品詳細へ遷移する", async () => {
@@ -72,7 +70,6 @@ test.describe("TC-002: 商品購入ジャーニー", () => {
     });
 
     await test.step("Assert: アプリが street/city/state を自動補完する", async () => {
-      // 自動補完(非同期)の完了を toHaveValue の自動リトライで待ってから proceed する
       await expect(streetInput(page)).toHaveValue(expectedAutoFill.street);
       await expect(cityInput(page)).toHaveValue(expectedAutoFill.city);
       await expect(stateInput(page)).toHaveValue(expectedAutoFill.state);

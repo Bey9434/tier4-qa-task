@@ -1,7 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-// street/city/state は含めない。country/postalCode/houseNumber から
-// postcode-lookup API 経由で自動補完されるため（詳細は fillAddress 参照）
+// street/city/state はアプリが自動補完するため含めない
 export type AddressInput = {
   readonly country: string;
   readonly postalCode: string;
@@ -11,8 +10,7 @@ export type AddressInput = {
 export const cartTotal = (page: Readonly<Page>): Locator =>
   page.getByTestId("cart-total");
 
-// 各ステップの要素が同じ DOM に共存し、同文言の「Proceed to checkout」ボタンが
-// 複数あるため getByRole の名前指定では一意にならず、data-test で区別する
+// 同文言の「Proceed to checkout」ボタンが各ステップに存在する。getByRole では一意にならない
 export const proceedFromCart = (page: Readonly<Page>): Locator =>
   page.getByTestId("proceed-1");
 export const proceedFromSignIn = (page: Readonly<Page>): Locator =>
@@ -20,8 +18,8 @@ export const proceedFromSignIn = (page: Readonly<Page>): Locator =>
 export const proceedFromAddress = (page: Readonly<Page>): Locator =>
   page.getByTestId("proceed-3");
 
-// 住所ステップに入ると保存住所取得(GET /users/me)がフォームを非同期に上書きする。
-// この応答を待たずに入力すると上書きで消え invalid のまま進めなくなるため、応答完了を待つ
+// 住所ステップの表示時に GET /users/me がフォームを非同期で上書きする。
+// 応答前に入力すると値が消え、フォームが invalid のまま進めなくなる
 export const proceedFromSignInToAddress = async (
   page: Readonly<Page>,
 ): Promise<void> => {
@@ -33,12 +31,12 @@ export const proceedFromSignInToAddress = async (
   await savedAddressLoaded;
 };
 
-// システムメッセージで role も data-test も持たないため、最後の手段として文言で取得する
+// role も data-test も無いため文言で取得する
 export const alreadyLoggedInMessage = (page: Readonly<Page>): Locator =>
   page.getByText(/already logged in/);
 
-// 「サインイン」と「ゲストとして進む」の両フォームが同時に DOM に存在し、両方に
-// 「Email address」ラベルがあるため getByLabel は一意にならない。data-test で絞る
+// サインインとゲスト用の 2 フォームが同時に存在し、どちらにも「Email address」ラベルがある。
+// getByLabel では一意にならない
 export const signIn = async (
   page: Readonly<Page>,
   email: string,
@@ -49,7 +47,7 @@ export const signIn = async (
   await page.getByTestId("login-submit").click();
 };
 
-// 住所入力欄。<label> との関連付けが確認できなかったため data-test で取得する
+// 住所入力欄は <label> と関連付いていないため data-test で取得する
 export const countrySelect = (page: Readonly<Page>): Locator =>
   page.getByTestId("country");
 export const streetInput = (page: Readonly<Page>): Locator =>
@@ -63,8 +61,8 @@ export const stateInput = (page: Readonly<Page>): Locator =>
 export const postalCodeInput = (page: Readonly<Page>): Locator =>
   page.getByTestId("postal_code");
 
-// street/city/state は手入力しない。postal_code/house_number の入力から非同期に
-// 自動補完(patchValue)されるため、手入力すると競合して一時的に invalid になりうる
+// street/city/state は手入力しない。postal_code と house_number から非同期に補完され、
+// 手入力すると競合してフォームが invalid になる
 export const fillAddress = async (
   page: Readonly<Page>,
   input: AddressInput,
@@ -84,8 +82,7 @@ export const selectPaymentMethod = async (
   await paymentMethodSelect(page).selectOption({ label: method });
 };
 
-// 同じボタンが1回目クリックで支払い検証、2回目クリックで注文作成を行う（非冪等）。
-// 呼び出し側でこのクリックをリトライしない（二重注文の原因になる）
+// 同じボタンが 1 回目で支払い検証、2 回目で注文作成を行う。注文作成は非冪等なのでリトライしない
 export const confirmButton = (page: Readonly<Page>): Locator =>
   page.getByRole("button", { name: "Confirm" });
 

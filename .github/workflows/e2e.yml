@@ -20,18 +20,20 @@ jobs:
       SPRINT: sprint5
       DISABLE_LOGGING: "true"
     steps:
-      # 既定の checkout はサブモジュールの中身を取らないため recursive で取得する
-      # (無いと test-target が空になり docker compose が起動できない)
+      # recursive でないと test-target が空になり docker compose が起動できない
       - uses: actions/checkout@v6
         with:
           submodules: recursive
 
+      # 公開イメージはピン留めコミットと一致しないためソースからビルドする。
+      # composer サービスは並行 install で後段の vendor/ を奪い合うので起動しない
       - name: テスト対象アプリを起動
         working-directory: test-target
-        run: docker compose -f docker-compose.yml up -d --force-recreate
+        run: |
+          docker compose -f docker-compose.yml up -d --force-recreate \
+            laravel-api angular-ui web mariadb
 
-      # docker compose up はコンテナ生成で戻り、entrypoint の完了を待たない。
-      # php が応答するまで待たずに次へ進むと composer install が空振りする
+      # compose up はコンテナ生成で戻る。php が応答する前に composer install すると空振りする
       - name: laravel-api コンテナの起動を待つ
         working-directory: test-target
         run: |
@@ -45,15 +47,22 @@ jobs:
           docker compose -f docker-compose.yml logs laravel-api
           exit 1
 
-      # PHP-FPM は vendor/ が無いと起動直後に接続を切る(前回の CI は curl exit 56 で失敗した)。
-      # base compose の composer サービス任せだと完了時刻が読めないため API 内で明示的に入れる
+      # vendor/ が無いと PHP-FPM は起動直後に接続を切る
       - name: API の依存(composer)をインストール
         working-directory: test-target
         run: |
           docker compose -f docker-compose.yml exec -T -u root laravel-api \
             composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-ffi
 
-      # globalSetup が migrate:fresh を叩く前に DB が受け付ける状態である必要がある
+      # /var/www はホストの bind mount。root で install した所有権を戻さないと
+      # php-fpm(www-data)が storage/ に書けず、Cache を使う GET だけが 500 になる
+      - name: /var/www の所有権を php-fpm 実行ユーザーに戻す
+        working-directory: test-target
+        run: |
+          docker compose -f docker-compose.yml exec -T -u root laravel-api \
+            sh -c "chown -R www-data /var/www && chmod 777 /var/www"
+
+      # globalSetup の migrate:fresh より前に DB が接続を受け付けている必要がある
       - name: MariaDB の起動を待つ
         working-directory: test-target
         run: |
@@ -68,8 +77,7 @@ jobs:
           docker compose -f docker-compose.yml logs mariadb
           exit 1
 
-      # ng serve のコンパイル完了まで compose up は待たない。UI(:4200)が応答する前に
-      # pnpm test を始めるとトップページ到達すらできず全テストが即失敗する
+      # compose up は ng serve のコンパイル完了を待たない。:4200 が応答する前に走ると全テストが落ちる
       - name: Angular UI(:4200) の起動を待つ
         working-directory: test-target
         run: |
@@ -92,19 +100,16 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # GitHub-hosted runner にはブラウザ本体も Playwright が要求する OS 依存ライブラリも
-      # 入っていないため、テスト実行前に明示的にインストールする
+      # runner にはブラウザ本体も OS 依存ライブラリも入っていない
       - run: npx playwright install --with-deps
 
-      # pnpm test は dotenvx run -- playwright test。dotenvx がコミット済みの暗号化 .env を
-      # DOTENV_PRIVATE_KEY で復号して BASE_URL/API_URL を注入する。鍵は GitHub Secrets に置く。
-      # 3ブラウザを1回で回し globalSetup(migrate:fresh + cache:clear)も1回。CI=true で
-      # workers:2 / retries:2 が効く
+      # pnpm test = dotenvx run -- playwright test。コミット済みの暗号化 .env を
+      # DOTENV_PRIVATE_KEY(Secrets)で復号して BASE_URL/API_URL を注入する
       - run: pnpm test
         env:
           DOTENV_PRIVATE_KEY: ${{ secrets.DOTENV_PRIVATE_KEY }}
 
-      # 常に保存すると成功時もレポートが積み上がるため、原因調査が要る失敗時だけ残す
+      # 成功時もレポートが積み上がるため、調査が要る失敗時だけ残す
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

@@ -1,4 +1,4 @@
-// 画面の表示文言と完全一致させる値（1文字でも違うとテストが落ちる）
+// 画面の表示文言と完全一致させる
 export const LOGIN_ERROR_MESSAGES = {
   emailRequired: "Email is required",
   emailFormatInvalid: "Email format is invalid",

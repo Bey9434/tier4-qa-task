@@ -13,7 +13,6 @@ import { PATHS } from "../pages/paths";
 import { registerAccount } from "../config/account";
 import type { Account } from "../config/account";
 
-// シナリオごとの期待結果（画面遷移・エラー表示・エラー非表示）を検証する
 const expectAccountPageDisplayed = async (
   page: Readonly<Page>,
 ): Promise<void> => {

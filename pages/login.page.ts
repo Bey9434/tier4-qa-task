@@ -1,21 +1,17 @@
 import type { Locator, Page } from "@playwright/test";
 import { PATHS } from "./paths";
 
-// <label for> があるため getByLabel で取れる（data-test でなくユーザーが見るラベルで検証したい）
+// data-test ではなく、ユーザーが実際に見るラベルで検証したい
 export const emailInput = (page: Readonly<Page>): Locator =>
   page.getByLabel("Email address");
-// 部分一致だと「Forgot your Password?」リンクの aria-label にも "Password" が含まれ衝突するため、
-// label の実文言「Password *」で厳密一致させる
+// 部分一致だと「Forgot your Password?」の aria-label と衝突する。実文言で厳密一致させる
 export const passwordInput = (page: Readonly<Page>): Locator =>
   page.getByLabel("Password *", { exact: true });
 
 export const loginButton = (page: Readonly<Page>): Locator =>
   page.getByRole("button", { name: "Login" });
 
-// パスワード表示切替ボタンは aria-label/data-test が無く一意に取得できない。
-// raw locator は eslint 規約で禁止のため、この補助シナリオは対象外とする
-
-// 動的生成の div で role/label を持たないため data-test で取得する
+// 動的生成の div で role も label も持たないため data-test で取得する
 export const emailError = (page: Readonly<Page>): Locator =>
   page.getByTestId("email-error");
 export const passwordError = (page: Readonly<Page>): Locator =>
