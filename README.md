@@ -16,7 +16,7 @@ cd test-target && docker compose up -d && cd ..   # 初回はビルドで数分
 pnpm test
 ```
 
-`pnpm test` は dotenvx で `.env` を復号し、`globalSetup` が DB を初期シードに戻してからテストを始める。
+`pnpm test` は dotenvx で `.env` を復号し、`globalSetup` が DB を初期シードに戻し（`migrate:fresh --seed`）商品キャッシュをクリア（`cache:clear`）してからテストを始める。
 
 ## 手動テストケース設計
 
