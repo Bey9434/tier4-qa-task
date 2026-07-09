@@ -1,39 +1,42 @@
 {
   "compilerOptions": {
-    // Playwright が TS を直接実行するので tsc の出力は不要。型検査・補完・typed-lint 専用
+    // テスト実行は Playwright が TS を直接読むため、変換後のファイル出力は不要
     "noEmit": true,
 
     "target": "ESNext",
-    // NodeNext だと .ts が CommonJS 判定され import 構文が verbatimModuleSyntax と衝突する。preserve は変換を実行側(Playwright)に委ね、相対 import に拡張子も強制しない
+    // "NodeNext" だと tsc がこの .ts を CommonJS 扱いし import 文でエラーになるため、
+    // TS を自前変換して動かす Playwright に合わせ "preserve" にする
     "module": "preserve",
     "moduleResolution": "bundler",
     "lib": ["ESNext"],
-    // 指定しないと @types 配下が全部グローバルに入る。node だけに絞る
+    // 指定しないと @types 配下の型が全部グローバルに混ざるため Node.js のものだけに絞る
     "types": ["node"],
 
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
-    // 依存の .d.ts は検査しない（自コードに集中・高速化）
+    // 依存パッケージ間の型不整合という自分では直せない理由で失敗しないよう検査から外す
     "skipLibCheck": true,
-    // 型のみ import を import type に強制（eslint consistent-type-imports と対）
+    // 自動判別だと型のみの import が出力から消え、副作用目的の import が黙って落ちうる。
+    // eslint の consistent-type-imports と対で運用する
     "verbatimModuleSyntax": true,
 
     "strict": true
-
-    // TODO(human): strict に含まれない追加の厳格化フラグをここに書く
   },
-  // typed-lint 対象の全 TS を含める。漏れると eslint が「project に無い」で落ちる
+  // 型チェックと eslint の対象にするファイル一覧。ここに載っていないファイルを
+  // eslint に読ませると「ファイルが tsconfig に含まれていない」というエラーで落ちる
   "include": [
     "eslint.config.mts",
     "playwright.config.ts",
     "pages/**/*.ts",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "config/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     "test-results",
     "playwright-report",
-    "blob-report"
+    "blob-report",
+    "test-target"
   ]
 }

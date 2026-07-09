@@ -1,0 +1,60 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # 既定の checkout はサブモジュールの中身を取得しないため submodules: recursive が必要
+      # (無いと test-target が空になり docker compose が失敗する)
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: テスト対象アプリを起動する
+        working-directory: test-target
+        run: docker compose up -d --build
+
+      # docker compose up はコンテナ起動要求を返すだけで API 起動完了を待たない。
+      # 未起動のまま pnpm test を始めると globalSetup が失敗するため、/status で待つ
+      - name: API の起動を待つ
+        run: |
+          curl --fail --silent --show-error \
+            --retry 30 --retry-delay 6 --retry-connrefused \
+            http://localhost:8091/status
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      # packageManager フィールドのバージョンで揃えるため corepack を使う。
+      # npm install -g pnpm だと無関係な最新版が入りローカルとずれ得る
+      - run: corepack enable
+
+      # 素の pnpm install は lockfile が package.json とずれていても更新して通してしまい、
+      # ずれに気付けない。CI ではずれを検知したいので --frozen-lockfile で失敗させる
+      - run: pnpm install --frozen-lockfile
+
+      - run: cp .env.example .env
+
+      # GitHub-hosted runner にはブラウザ本体も Playwright が要求する OS 依存ライブラリも
+      # 入っていないため、テスト実行前に明示的にインストールする
+      - run: npx playwright install --with-deps
+
+      # GitHub Actions は CI=true を自動設定するため、playwright.config.ts の CI 分岐
+      # (workers/retries/forbidOnly) がここで何も指定せず効く
+      - run: pnpm test
+
+      # 常にアップロードすると成功時にも数十 MB のレポートが積み上がり続けるため、
+      # 失敗して原因調査が必要なときだけ保存する
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

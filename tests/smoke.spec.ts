@@ -5,7 +5,7 @@ test.describe("Smoke: トップページ到達性", () => {
     const response = await page.goto("/");
 
     expect(response?.status()).toBe(200);
-    // タイトル文言は固定しない。文言変更で壊れる検証を避け、非空＝描画済みだけを見る
+    // タイトル文言自体は検証しない（変更で無関係に落ちるのを避ける）
     await expect(page).toHaveTitle(/.+/);
   });
 });

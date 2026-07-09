@@ -6,3 +6,6 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+
+# テスト対象アプリ（submodule・第三者コード）
+test-target/
