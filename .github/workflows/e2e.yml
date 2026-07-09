@@ -1,58 +1,111 @@
 name: E2E
-
 on:
   push:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e:
+    name: E2E (chromium / firefox / webkit)
+    timeout-minutes: 45
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    env:
+      SPRINT: sprint5
+      DISABLE_LOGGING: "true"
     steps:
-      # 既定の checkout はサブモジュールの中身を取得しないため submodules: recursive が必要
-      # (無いと test-target が空になり docker compose が失敗する)
-      - uses: actions/checkout@v4
+      # 既定の checkout はサブモジュールの中身を取らないため recursive で取得する
+      # (無いと test-target が空になり docker compose が起動できない)
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
-      - name: テスト対象アプリを起動する
+      - name: テスト対象アプリを起動
         working-directory: test-target
-        run: docker compose up -d --build
+        run: docker compose -f docker-compose.yml up -d --force-recreate
 
-      # docker compose up はコンテナ起動要求を返すだけで API 起動完了を待たない。
-      # 未起動のまま pnpm test を始めると globalSetup が失敗するため、/status で待つ
-      - name: API の起動を待つ
+      # docker compose up はコンテナ生成で戻り、entrypoint の完了を待たない。
+      # php が応答するまで待たずに次へ進むと composer install が空振りする
+      - name: laravel-api コンテナの起動を待つ
+        working-directory: test-target
         run: |
-          curl --fail --silent --show-error \
-            --retry 30 --retry-delay 6 --retry-connrefused \
-            http://localhost:8091/status
+          for _ in $(seq 1 30); do
+            if docker compose -f docker-compose.yml exec -T laravel-api php -v >/dev/null 2>&1; then
+              echo "laravel-api ready"; exit 0
+            fi
+            sleep 2
+          done
+          echo "laravel-api failed to start"
+          docker compose -f docker-compose.yml logs laravel-api
+          exit 1
 
-      - uses: actions/setup-node@v4
+      # PHP-FPM は vendor/ が無いと起動直後に接続を切る(前回の CI は curl exit 56 で失敗した)。
+      # base compose の composer サービス任せだと完了時刻が読めないため API 内で明示的に入れる
+      - name: API の依存(composer)をインストール
+        working-directory: test-target
+        run: |
+          docker compose -f docker-compose.yml exec -T -u root laravel-api \
+            composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-ffi
+
+      # globalSetup が migrate:fresh を叩く前に DB が受け付ける状態である必要がある
+      - name: MariaDB の起動を待つ
+        working-directory: test-target
+        run: |
+          for _ in $(seq 1 30); do
+            if docker compose -f docker-compose.yml exec -T mariadb \
+                 mysqladmin ping -h localhost -u root -proot --silent 2>/dev/null; then
+              echo "MariaDB ready"; exit 0
+            fi
+            sleep 2
+          done
+          echo "MariaDB failed to start"
+          docker compose -f docker-compose.yml logs mariadb
+          exit 1
+
+      # ng serve のコンパイル完了まで compose up は待たない。UI(:4200)が応答する前に
+      # pnpm test を始めるとトップページ到達すらできず全テストが即失敗する
+      - name: Angular UI(:4200) の起動を待つ
+        working-directory: test-target
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:4200; then
+              echo "Angular UI ready"; exit 0
+            fi
+            sleep 5
+          done
+          echo "Angular UI failed to start"
+          docker compose -f docker-compose.yml logs angular-ui
+          exit 1
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version-file: .tool-versions
+          cache: pnpm
 
-      # packageManager フィールドのバージョンで揃えるため corepack を使う。
-      # npm install -g pnpm だと無関係な最新版が入りローカルとずれ得る
-      - run: corepack enable
-
-      # 素の pnpm install は lockfile が package.json とずれていても更新して通してしまい、
-      # ずれに気付けない。CI ではずれを検知したいので --frozen-lockfile で失敗させる
       - run: pnpm install --frozen-lockfile
-
-      - run: cp .env.example .env
 
       # GitHub-hosted runner にはブラウザ本体も Playwright が要求する OS 依存ライブラリも
       # 入っていないため、テスト実行前に明示的にインストールする
       - run: npx playwright install --with-deps
 
-      # GitHub Actions は CI=true を自動設定するため、playwright.config.ts の CI 分岐
-      # (workers/retries/forbidOnly) がここで何も指定せず効く
+      # pnpm test は dotenvx run -- playwright test。dotenvx がコミット済みの暗号化 .env を
+      # DOTENV_PRIVATE_KEY で復号して BASE_URL/API_URL を注入する。鍵は GitHub Secrets に置く。
+      # 3ブラウザを1回で回し globalSetup(migrate:fresh + cache:clear)も1回。CI=true で
+      # workers:2 / retries:2 が効く
       - run: pnpm test
+        env:
+          DOTENV_PRIVATE_KEY: ${{ secrets.DOTENV_PRIVATE_KEY }}
 
-      # 常にアップロードすると成功時にも数十 MB のレポートが積み上がり続けるため、
-      # 失敗して原因調査が必要なときだけ保存する
-      - uses: actions/upload-artifact@v4
+      # 常に保存すると成功時もレポートが積み上がるため、原因調査が要る失敗時だけ残す
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
