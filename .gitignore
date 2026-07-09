@@ -7,5 +7,5 @@ playwright-report/
 blob-report/
 playwright/.cache/
 
-# env
+# env（暗号化済み .env はコミットする。復号鍵の .env.keys だけ除外する）
 .env.keys

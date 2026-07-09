@@ -1,10 +1,10 @@
 {
   "name": "tier4-qa-task",
   "version": "1.0.0",
-  "description": "Practice Software Testing を対象とした E2E テスト自動化課題（Playwright + TypeScript）",
+  "description": "Practice Software Testing を対象とした E2E テスト自動化（Playwright + TypeScript）",
   "private": true,
   "scripts": {
-    "test": "playwright test",
+    "test": "dotenvx run -- playwright test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -17,6 +17,7 @@
     "**/*": "prettier --write --ignore-unknown"
   },
   "devDependencies": {
+    "@dotenvx/dotenvx": "^2.1.5",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
     "@types/node": "^24.0.0",

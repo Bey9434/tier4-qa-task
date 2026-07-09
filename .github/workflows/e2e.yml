@@ -1,0 +1,120 @@
+name: E2E
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: E2E (chromium / firefox / webkit)
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    env:
+      SPRINT: sprint5
+      DISABLE_LOGGING: "true"
+    steps:
+      # recursive でないと test-target が空になり docker compose が起動できない。
+      # このジョブは push しないため checkout 後に GITHUB_TOKEN を .git/config に残さない
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      # 公開イメージはピン留めコミットと一致しないためソースからビルドする。
+      # composer サービスは並行 install で後段の vendor/ を奪い合うので起動しない
+      - name: テスト対象アプリを起動
+        working-directory: test-target
+        run: |
+          docker compose -f docker-compose.yml up -d --force-recreate \
+            laravel-api angular-ui web mariadb
+
+      # compose up はコンテナ生成で戻る。php が応答する前に composer install すると空振りする
+      - name: laravel-api コンテナの起動を待つ
+        working-directory: test-target
+        run: |
+          for _ in $(seq 1 30); do
+            if docker compose -f docker-compose.yml exec -T laravel-api php -v >/dev/null 2>&1; then
+              echo "laravel-api ready"; exit 0
+            fi
+            sleep 2
+          done
+          echo "laravel-api failed to start"
+          docker compose -f docker-compose.yml logs laravel-api
+          exit 1
+
+      # vendor/ が無いと PHP-FPM は起動直後に接続を切る
+      - name: API の依存(composer)をインストール
+        working-directory: test-target
+        run: |
+          docker compose -f docker-compose.yml exec -T -u root laravel-api \
+            composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-ffi
+
+      # /var/www はホストの bind mount。root で install した所有権を戻さないと
+      # php-fpm(www-data)が storage/ に書けず、Cache を使う GET だけが 500 になる
+      - name: /var/www の所有権を php-fpm 実行ユーザーに戻す
+        working-directory: test-target
+        run: |
+          docker compose -f docker-compose.yml exec -T -u root laravel-api \
+            sh -c "chown -R www-data /var/www && chmod 777 /var/www"
+
+      # globalSetup の migrate:fresh より前に DB が接続を受け付けている必要がある
+      - name: MariaDB の起動を待つ
+        working-directory: test-target
+        run: |
+          for _ in $(seq 1 30); do
+            if docker compose -f docker-compose.yml exec -T mariadb \
+                 mysqladmin ping -h localhost -u root -proot --silent 2>/dev/null; then
+              echo "MariaDB ready"; exit 0
+            fi
+            sleep 2
+          done
+          echo "MariaDB failed to start"
+          docker compose -f docker-compose.yml logs mariadb
+          exit 1
+
+      # compose up は ng serve のコンパイル完了を待たない。:4200 が応答する前に走ると全テストが落ちる
+      - name: Angular UI(:4200) の起動を待つ
+        working-directory: test-target
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -sf --max-time 5 -o /dev/null http://localhost:4200; then
+              echo "Angular UI ready"; exit 0
+            fi
+            sleep 5
+          done
+          echo "Angular UI failed to start"
+          docker compose -f docker-compose.yml logs angular-ui
+          exit 1
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .tool-versions
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # runner にはブラウザ本体も OS 依存ライブラリも入っていない
+      - run: npx playwright install --with-deps
+
+      # pnpm test = dotenvx run -- playwright test。コミット済みの暗号化 .env を
+      # DOTENV_PRIVATE_KEY(Secrets)で復号して BASE_URL/API_URL を注入する
+      - run: pnpm test
+        env:
+          DOTENV_PRIVATE_KEY: ${{ secrets.DOTENV_PRIVATE_KEY }}
+
+      # 成功時もレポートが積み上がるため、調査が要る失敗時だけ残す
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

@@ -7,25 +7,25 @@ import boundaries from "eslint-plugin-boundaries";
 import prettierConfig from "eslint-config-prettier";
 
 export default tseslint.config(
-  // lint対象外
   {
     ignores: [
       "node_modules/",
       "test-results/",
       "playwright-report/",
       "blob-report/",
+      // テスト対象アプリ（submodule）。第三者コードは検査しない
+      "test-target/",
     ],
   },
-  // JS/TS ファイルに推奨ルールを適用
   {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
     extends: [js.configs.recommended],
     languageOptions: { globals: globals.browser },
   },
-  // TypeScript 型チェック付き推奨ルール
   ...tseslint.configs.recommendedTypeChecked,
 
-  // 関数型プログラミング推奨ルール (eslint-plugin-functional)
+  // このプロジェクトは Page Object をクラスでなく関数で書く決まり（CLAUDE.md）。
+  // 決まりを口約束にせず、クラスや this を書いたら eslint がエラーで止めるようにする
   {
     plugins: { functional },
     rules: {
@@ -39,14 +39,14 @@ export default tseslint.config(
   // TypeScript 追加ルール
   {
     rules: {
-      // import type の使い方を統一（型は import type で明示）
       "@typescript-eslint/consistent-type-imports": "error",
       // console.log の消し忘れ防止
       "no-console": "error",
     },
   },
 
-  // アーキテクチャルール (eslint-plugin-boundaries)
+  // import の向きを tests → pages の一方向に固定する。pages が tests を import すると
+  // テストの都合が Page Object に漏れるため、レビューでなく機械で止める
   {
     plugins: { boundaries },
     settings: {
@@ -60,9 +60,8 @@ export default tseslint.config(
       "boundaries/dependencies": [
         "error",
         {
-          default: "disallow", // 原則禁止
+          default: "disallow",
           rules: [
-            // tests から pages への import のみ
             {
               from: { type: "tests" },
               allow: { to: { type: "pages" } },
@@ -73,7 +72,6 @@ export default tseslint.config(
     },
   },
 
-  // 型情報の設定（tsconfig.json を使用）
   {
     languageOptions: {
       parserOptions: {
@@ -83,18 +81,23 @@ export default tseslint.config(
     },
   },
 
-  // Playwright 推奨ルール（テストファイルのみに適用）
   {
     ...playwright.configs["flat/recommended"],
     files: ["tests/**/*.spec.ts", "pages/**/*.ts"],
     rules: {
       ...playwright.configs["flat/recommended"].rules,
-      "functional/no-return-void": "off", // テストは副作用必須
-      "functional/no-expression-statements": "off", // expect(...) は式
+      // tests / pages ともクリック・入力など戻り値のない操作が連続するため、
+      // この 2 つの関数型ルールは両方で解除する
+      "functional/no-return-void": "off",
+      "functional/no-expression-statements": "off",
 
-      // recommendedのwarnをerrorにする。
       "playwright/consistent-spacing-between-blocks": "error",
-      "playwright/expect-expect": "error",
+      // データ駆動テストは assertOutcome 経由で検証するため、汎用的な名前だと
+      // 誤検知/検出漏れが起きる。この用途専用の関数名だけを指定する
+      "playwright/expect-expect": [
+        "error",
+        { assertFunctionNames: ["assertOutcome"] },
+      ],
       "playwright/max-nested-describe": "error",
       "playwright/no-conditional-expect": "error",
       "playwright/no-conditional-in-test": "error",
@@ -109,7 +112,6 @@ export default tseslint.config(
       "playwright/no-wait-for-selector": "error",
       "playwright/no-wait-for-timeout": "error",
 
-      // recommended に含まれない追加ルール
       "playwright/no-slowed-test": "error",
       "playwright/no-raw-locators": "error",
       "playwright/prefer-native-locators": "error",
@@ -129,6 +131,5 @@ export default tseslint.config(
     },
   },
 
-  // Prettier と競合するルールを無効化
   prettierConfig,
 );

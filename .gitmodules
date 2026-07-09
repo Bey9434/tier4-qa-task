@@ -1,0 +1,4 @@
+[submodule "test-target"]
+	path = test-target
+	url = https://github.com/testsmith-io/practice-software-testing
+	shallow = true
