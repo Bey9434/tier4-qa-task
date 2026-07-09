@@ -20,10 +20,12 @@ jobs:
       SPRINT: sprint5
       DISABLE_LOGGING: "true"
     steps:
-      # recursive でないと test-target が空になり docker compose が起動できない
+      # recursive でないと test-target が空になり docker compose が起動できない。
+      # このジョブは push しないため checkout 後に GITHUB_TOKEN を .git/config に残さない
       - uses: actions/checkout@v6
         with:
           submodules: recursive
+          persist-credentials: false
 
       # 公開イメージはピン留めコミットと一致しないためソースからビルドする。
       # composer サービスは並行 install で後段の vendor/ を奪い合うので起動しない
@@ -82,7 +84,7 @@ jobs:
         working-directory: test-target
         run: |
           for _ in $(seq 1 60); do
-            if curl -sf -o /dev/null http://localhost:4200; then
+            if curl -sf --max-time 5 -o /dev/null http://localhost:4200; then
               echo "Angular UI ready"; exit 0
             fi
             sleep 5
