@@ -4,6 +4,8 @@ import type { APIRequestContext } from "@playwright/test";
 export type Account = { readonly email: string; readonly password: string };
 
 // 登録 API はパスワードの漏洩チェックを行う。ランダム生成すると稀に該当して 422 で落ちる
+// このパスワードはローカル Docker で起動したテスト対象に登録する使い捨てアカウント専用で、
+// 実在サービスの資格情報ではないため平文で持つ
 const REGISTER_PASSWORD = "Aa1!aA2@bStrongPw";
 const API_URL = process.env.API_URL ?? "http://localhost:8091";
 

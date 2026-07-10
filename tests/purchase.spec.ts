@@ -19,6 +19,7 @@ import {
   orderConfirmationMessage,
 } from "../pages/checkout.page";
 import type { AddressInput } from "../pages/checkout.page";
+import { ORDER_CONFIRMATION_MESSAGE } from "../pages/messages";
 import { registerAccount } from "../config/account";
 import { STABLE_PRODUCT_NAME } from "../config/test-data";
 
@@ -85,8 +86,12 @@ test.describe("TC-002: 商品購入ジャーニー", () => {
       );
       // 2回目: 注文作成（非冪等のためリトライ禁止）
       await confirmButton(page).click();
+      // 2 回目の Confirm クリック後の注文作成 API の応答が expect 既定の 5 秒に
+      // 収まらないことがあるため延長する（遅延の主因は未特定。並列ワーカーの
+      // 同時書き込みが疑わしいが切り分けはしていない）。クリックのやり直しは
+      // 上記のとおり二重注文を作るため選べず、吸収は待ち時間の延長だけで行う
       await expect(orderConfirmationMessage(page)).toContainText(
-        "Thanks for your order! Your invoice number is",
+        ORDER_CONFIRMATION_MESSAGE,
         { timeout: 15000 },
       );
     });

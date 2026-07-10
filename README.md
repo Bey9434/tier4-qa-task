@@ -1,22 +1,31 @@
 # tier4-qa-task
 
+[![E2E](https://github.com/Bey9434/tier4-qa-task/actions/workflows/e2e.yml/badge.svg)](https://github.com/Bey9434/tier4-qa-task/actions/workflows/e2e.yml)
+[![Code Quality](https://github.com/Bey9434/tier4-qa-task/actions/workflows/quality.yml/badge.svg)](https://github.com/Bey9434/tier4-qa-task/actions/workflows/quality.yml)
+
 [practice-software-testing](https://github.com/testsmith-io/practice-software-testing)（Toolshop）を対象とした E2E テスト自動化。手動テストケースの設計と、Playwright + TypeScript による自動化を含む。
 
 テスト対象は公開デモではなく、`test-target` サブモジュールをローカル Docker で起動したものである。
-公開デモは全利用者がアカウントを共有している。
-他人のログイン失敗でロックされると巻き添えで落ちるため。
+公開デモは全利用者がアカウントを共有しており、他人のログイン失敗で共有アカウントがロックされると無関係のテストが巻き添えで落ちるため使わない。
 
 ## セットアップと実行
 
-前提: Node 24、pnpm 10.28.2、Docker。`.env` は暗号化してコミット済み。復号鍵 `.env.keys` は別途受け取って直下に置く（変数の一覧は `.env.example`）。
+前提: Node 24、pnpm 10.28.2、Docker。
+Node / pnpm の版は `.tool-versions` に固定してあり、ローカルでは mise（または asdf）が、CI では actions/setup-node の node-version-file が同じファイルを読む。
+
+`.env` は dotenvx で暗号化してコミット済み（変数の一覧は `.env.example`）。復号鍵 `.env.keys` を持っている場合は直下に置く。
+鍵が無い場合は `cp .env.example .env` で平文実行できる（値はすべて公開デモ値。平文で上書きした `.env` はコミットしないこと）。
 
 ```bash
+git clone --recurse-submodules https://github.com/Bey9434/tier4-qa-task.git && cd tier4-qa-task
 pnpm install
+pnpm exec playwright install   # ブラウザ本体の取得（未取得だとテストが起動できない）
 cd test-target && docker compose up -d && cd ..   # 初回はビルドで数分
 pnpm test
 ```
 
 `pnpm test` は dotenvx で `.env` を復号し、`globalSetup` が DB を初期シードに戻し（`migrate:fresh --seed`）商品キャッシュをクリア（`cache:clear`）してからテストを始める。
+初回起動の API が本文空の 500 を返す場合は storage の所有権が原因（CI の `e2e.yml`「所有権を戻す」ステップと同じ手当てをローカルの test-target にも適用する）。
 
 ## 手動テストケース設計
 

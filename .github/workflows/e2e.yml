@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,6 +12,8 @@ concurrency:
   group: e2e-${{ github.ref }}
   cancel-in-progress: true
 
+# 各 action は <SHA> # v<N> の形式でコミット SHA に固定する。
+# タグは後から別のコミットに向け直せるが、SHA は同じ値が指すコミットを変えられない。
 jobs:
   e2e:
     name: E2E (chromium / firefox / webkit)
@@ -22,7 +25,7 @@ jobs:
     steps:
       # recursive でないと test-target が空になり docker compose が起動できない。
       # このジョブは push しないため checkout 後に GITHUB_TOKEN を .git/config に残さない
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           submodules: recursive
           persist-credentials: false
@@ -93,9 +96,9 @@ jobs:
           docker compose -f docker-compose.yml logs angular-ui
           exit 1
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version-file: .tool-versions
           cache: pnpm
@@ -111,8 +114,24 @@ jobs:
         env:
           DOTENV_PRIVATE_KEY: ${{ secrets.DOTENV_PRIVATE_KEY }}
 
+      # laravel-api 起動失敗時のログは起動待ちステップ内で既に出力されるが、
+      # 起動後にテストが落ちた場合は API 側のログがどこにも残らず、
+      # playwright-report（クライアント側の記録）だけでは原因を特定できない
+      - name: docker compose のログを収集
+        if: failure()
+        working-directory: test-target
+        run: |
+          docker compose -f docker-compose.yml logs --no-color > "$RUNNER_TEMP/compose-logs.txt"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: failure()
+        with:
+          name: compose-logs
+          path: ${{ runner.temp }}/compose-logs.txt
+          retention-days: 7
+
       # 成功時もレポートが積み上がるため、調査が要る失敗時だけ残す
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: failure()
         with:
           name: playwright-report

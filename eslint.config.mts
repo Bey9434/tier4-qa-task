@@ -46,14 +46,22 @@ export default tseslint.config(
   },
 
   // import の向きを tests → pages の一方向に固定する。pages が tests を import すると
-  // テストの都合が Page Object に漏れるため、レビューでなく機械で止める
+  // テストの都合が Page Object に漏れるため、レビューでなく機械で止める。
+  // config/ も要素に加え、許可は tests → config だけにする（pages がテストデータに依存し始める余地を塞ぐ）
   {
     plugins: { boundaries },
     settings: {
-      "boundaries/include": ["pages/**/*", "tests/**/*"],
+      // boundaries は import 先のファイル解決に eslint-module-utils を使うが、その node リゾルバは
+      // 既定で .js しか探さない。.ts を追加しないと全 import が「未知」扱いになり、
+      // このブロックのルール全体が一度も発火しない（違反を注入しても素通りする）
+      "import/resolver": {
+        node: { extensions: [".ts", ".mts", ".cts", ".js"] },
+      },
+      "boundaries/include": ["pages/**/*", "tests/**/*", "config/**/*"],
       "boundaries/elements": [
         { type: "pages", pattern: "pages" },
         { type: "tests", pattern: "tests" },
+        { type: "config", pattern: "config" },
       ],
     },
     rules: {
@@ -64,7 +72,7 @@ export default tseslint.config(
           rules: [
             {
               from: { type: "tests" },
-              allow: { to: { type: "pages" } },
+              allow: { to: { type: ["pages", "config"] } },
             },
           ],
         },

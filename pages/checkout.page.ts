@@ -1,4 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
+import { ORDER_CONFIRMATION_MESSAGE } from "./messages";
 
 // street/city/state はアプリが自動補完するため含めない
 export type AddressInput = {
@@ -89,5 +90,6 @@ export const confirmButton = (page: Readonly<Page>): Locator =>
 export const paymentSuccessMessage = (page: Readonly<Page>): Locator =>
   page.getByTestId("payment-success-message");
 
+// 文字列指定の getByText は部分一致のため、末尾に請求書番号が続いても一致する。正規表現は不要
 export const orderConfirmationMessage = (page: Readonly<Page>): Locator =>
-  page.getByText(/Thanks for your order/);
+  page.getByText(ORDER_CONFIRMATION_MESSAGE);
