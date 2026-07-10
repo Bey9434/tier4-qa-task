@@ -4,7 +4,7 @@
   "description": "Practice Software Testing を対象とした E2E テスト自動化（Playwright + TypeScript）",
   "private": true,
   "scripts": {
-    "test": "dotenvx run -- playwright test",
+    "test": "dotenvx run --strict -- playwright test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
