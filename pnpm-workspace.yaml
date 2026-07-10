@@ -1,7 +1,3 @@
-# 公開から 1440 分（24 時間）未満のパッケージバージョンを pnpm が依存解決の対象から除外する。
-# npm のメンテナアカウント乗っ取り直後に公開される汚染バージョンは、乗っ取りの発覚から
-# パッケージ撤回までに時間差があるため、この猶予時間だけ解決対象から外すことで自動的に回避できる。
-# pnpm 11 からはデフォルトで有効だが、この repo の pnpm 10.28.2 では明示しない限り無効
-# (根拠: https://pnpm.io/settings の minimumReleaseAge 節)。
-# CI は --frozen-lockfile で依存解決フェーズ自体が走らないため、CI の挙動には影響しない。
-minimumReleaseAge: 1440
+# pnpm 10 では未指定だと無効。7 日（pnpm 11 既定の 1 日より長い）は、汚染版の大半が
+# 検出・削除されるまでの実測猶予（https://securitylabs.datadoghq.com/articles/dependency-cooldowns/）
+minimumReleaseAge: 10080

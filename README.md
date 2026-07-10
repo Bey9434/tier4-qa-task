@@ -11,10 +11,10 @@
 ## セットアップと実行
 
 前提: Node 24、pnpm 10.28.2、Docker。
-Node / pnpm の版は `.tool-versions` に固定してあり、ローカルでは mise（または asdf）が、CI では actions/setup-node の node-version-file が同じファイルを読む。
+版の固定は 2 系統ある: Node は `.tool-versions`（ローカルは mise / CI は actions/setup-node の node-version-file が読む）、pnpm は `package.json` の `packageManager`（CI の pnpm/action-setup はこのフィールドしか読まない）。`.tool-versions` の pnpm はローカル用で、版を上げるときは両方を手で揃える。
 
 `.env` は dotenvx で暗号化してコミット済み（変数の一覧は `.env.example`）。復号鍵 `.env.keys` を持っている場合は直下に置く。
-鍵が無い場合は `cp .env.example .env` で平文実行できる（値はすべて公開デモ値。平文で上書きした `.env` はコミットしないこと）。
+鍵が無い場合は `cp .env.example .env` で平文実行できる（値はローカル起動時の既定値 localhost で機密ではない。平文で上書きした `.env` はコミットしないこと）。
 
 ```bash
 git clone --recurse-submodules https://github.com/Bey9434/tier4-qa-task.git && cd tier4-qa-task

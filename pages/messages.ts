@@ -1,5 +1,5 @@
-// 画面の表示文言と完全一致させる。
-// UI 固有の期待文言はこのファイルに置き、テスト都合の値（アカウント・テストデータ）は config/ に置く
+// エラー文言・見出しは画面の表示と完全一致させる（1 文字違えばテストが落ちる）。
+// 請求書番号のように動的な値が後ろに続く文言は、固定部分（先頭）だけを持つ
 export const LOGIN_ERROR_MESSAGES = {
   emailRequired: "Email is required",
   emailFormatInvalid: "Email format is invalid",

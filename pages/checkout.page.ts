@@ -76,13 +76,6 @@ export const fillAddress = async (
 export const paymentMethodSelect = (page: Readonly<Page>): Locator =>
   page.getByTestId("payment-method");
 
-export const selectPaymentMethod = async (
-  page: Readonly<Page>,
-  method: string,
-): Promise<void> => {
-  await paymentMethodSelect(page).selectOption({ label: method });
-};
-
 // 同じボタンが 1 回目で支払い検証、2 回目で注文作成を行う。注文作成は非冪等なのでリトライしない
 export const confirmButton = (page: Readonly<Page>): Locator =>
   page.getByRole("button", { name: "Confirm" });

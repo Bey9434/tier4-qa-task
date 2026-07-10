@@ -34,9 +34,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # eslint の型情報ルール（typescript-eslint の *-type-checked 系）はルール違反しか報告せず、
-      # 未使用変数以外の任意の型エラー（例: 引数の型不一致）は検出しない。tsc --noEmit が無いと
-      # 型エラーが CI をすり抜け、E2E 実行時の実行時エラーとして初めて顕在化する
+      # eslint の型情報ルールはルール違反しか報告せず、引数の型不一致のような任意の型エラーは検出しない。
+      # tsc が無いと型エラーは CI を素通りし、実行時エラーか黙った誤動作として初めて表に出る
       - run: pnpm typecheck
 
       - run: pnpm lint

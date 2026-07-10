@@ -51,8 +51,8 @@ export default tseslint.config(
   {
     plugins: { boundaries },
     settings: {
-      // boundaries は import 先のファイル解決に eslint-module-utils を使うが、その node リゾルバは
-      // 既定で .js しか探さない。.ts を追加しないと全 import が「未知」扱いになり、
+      // boundaries は import 先のファイル解決に eslint-module-utils を使うが、その node リゾルバの
+      // 既定拡張子に .ts が無い。追加しないと全 import が「未知」扱いになり、
       // このブロックのルール全体が一度も発火しない（違反を注入しても素通りする）
       "import/resolver": {
         node: { extensions: [".ts", ".mts", ".cts", ".js"] },

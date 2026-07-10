@@ -13,7 +13,7 @@ import {
   streetInput,
   cityInput,
   stateInput,
-  selectPaymentMethod,
+  paymentMethodSelect,
   confirmButton,
   paymentSuccessMessage,
   orderConfirmationMessage,
@@ -78,7 +78,9 @@ test.describe("TC-002: 商品購入ジャーニー", () => {
     });
 
     await test.step("Act & Assert: 支払い方法を選択し注文を確定する", async () => {
-      await selectPaymentMethod(page, "Cash on Delivery");
+      await paymentMethodSelect(page).selectOption({
+        label: "Cash on Delivery",
+      });
       // 1回目: 支払い検証のみ（注文はまだ作られない）
       await confirmButton(page).click();
       await expect(paymentSuccessMessage(page)).toHaveText(
