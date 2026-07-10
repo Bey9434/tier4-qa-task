@@ -145,14 +145,21 @@ jobs:
         with:
           path: playwright-report/
 
-  # e2e の成否に依存させず常に公開する
+  # 失敗した run のレポートこそ見たいため e2e の成否に依存させない。
+  # !cancelled() はステータス関数なので needs の暗黙 success ゲートも解除される
   deploy-report:
+    name: Deploy Report to GitHub Pages
     needs: e2e
-    if: ${{ github.ref == 'refs/heads/main' && always() && !cancelled() }}
+    if: ${{ github.ref == 'refs/heads/main' && !cancelled() }}
     runs-on: ubuntu-latest
+    # 書き込み権限はこのジョブに閉じる。pages は Pages への公開、id-token は OIDC のデプロイ元検証用
     permissions:
       pages: write
       id-token: write
+    # 公式 Pages テンプレートと同じ直列化。進行中の本番デプロイは中断せず完走させる
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
