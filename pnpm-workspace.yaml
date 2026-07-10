@@ -1,0 +1,3 @@
+# pnpm 10 では未指定だと無効・pnpm 11 の既定は 1 日（https://pnpm.io/settings）。
+# 7 日は汚染版の大半が検出・削除されるまでの実測猶予（https://securitylabs.datadoghq.com/articles/dependency-cooldowns/）
+minimumReleaseAge: 10080

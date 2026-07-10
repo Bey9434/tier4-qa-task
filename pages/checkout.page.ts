@@ -1,4 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
+import { ORDER_CONFIRMATION_MESSAGE } from "./messages";
 
 // street/city/state はアプリが自動補完するため含めない
 export type AddressInput = {
@@ -75,13 +76,6 @@ export const fillAddress = async (
 export const paymentMethodSelect = (page: Readonly<Page>): Locator =>
   page.getByTestId("payment-method");
 
-export const selectPaymentMethod = async (
-  page: Readonly<Page>,
-  method: string,
-): Promise<void> => {
-  await paymentMethodSelect(page).selectOption({ label: method });
-};
-
 // 同じボタンが 1 回目で支払い検証、2 回目で注文作成を行う。注文作成は非冪等なのでリトライしない
 export const confirmButton = (page: Readonly<Page>): Locator =>
   page.getByRole("button", { name: "Confirm" });
@@ -89,5 +83,6 @@ export const confirmButton = (page: Readonly<Page>): Locator =>
 export const paymentSuccessMessage = (page: Readonly<Page>): Locator =>
   page.getByTestId("payment-success-message");
 
+// 文字列指定の getByText は部分一致のため、末尾に請求書番号が続いても一致する。正規表現は不要
 export const orderConfirmationMessage = (page: Readonly<Page>): Locator =>
-  page.getByText(/Thanks for your order/);
+  page.getByText(ORDER_CONFIRMATION_MESSAGE);

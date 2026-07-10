@@ -1,0 +1,33 @@
+version: 2
+
+# gitsubmodule は追加しない: test-target は固定が目的で、自動更新はテスト対象を変えてしまう
+updates:
+  # SHA ピンでも Dependabot は SHA と # vN コメントの両方を更新する
+  # (https://github.blog/changelog/2022-10-31-dependabot-now-updates-comments-in-github-actions-workflows-referencing-action-versions/)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    # 7 日 = pnpm-workspace.yaml の minimumReleaseAge と同一方針（根拠はそちら）
+    cooldown:
+      default-days: 7
+
+  # npm エコシステム指定で pnpm の lockfile も更新対象になる
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
+    cooldown:
+      default-days: 7

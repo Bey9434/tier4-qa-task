@@ -17,6 +17,8 @@
 - **Functional POM**: `pages/` は関数エクスポートのみ。クラス禁止。引数は `Readonly<Page>`
 - ロケーター優先順位: `getByRole` > `getByLabel` > `getByPlaceholder` > `getByTestId`（`data-test` 属性）> `getByText`
 - 依存方向は `tests/` → `pages/` の一方通行。spec 内での `page.locator()` 直書き禁止
+- 操作関数化の基準: `pages/` の export は Locator を返す関数が基本。複数操作や応答待機を伴うフローだけ操作関数（Promise を返す）にする
+- 定数の配置基準: UI 固有の期待文言は `pages/messages.ts`、テスト都合の値（アカウント・テストデータ）は `config/`
 - コメント・文章の書き方（コード・コミット・README・notes に共通で適用）:
   - **書き分け**: コード=How（実装そのもの）/ テストコード=What（何を保証するか）/ コミットログ=Why（なぜ変えたか）/ コードコメント=Why not（なぜ当然の選択肢を採らなかったか）
   - **Why not の中身**: 却下した代替・回避した罠・非自明な制約に絞る。How の言い換えや API 名の翻訳（例: `forbidOnly` に「only を失敗にする」）は書かない

@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,6 +12,8 @@ concurrency:
   group: quality-${{ github.ref }}
   cancel-in-progress: true
 
+# 各 action は <SHA> # v<N> の形式でコミット SHA に固定する。
+# タグは後から別のコミットに向け直せるが、SHA は同じ値が指すコミットを変えられない。
 jobs:
   quality:
     name: Lint & Format
@@ -18,18 +21,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # このジョブは push しないため、checkout 後に GITHUB_TOKEN を .git/config に残さない
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version-file: .tool-versions
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      # eslint の型情報ルールはルール違反しか報告せず、引数の型不一致のような任意の型エラーは検出しない。
+      # tsc が無いと型エラーは CI を素通りし、実行時エラーか黙った誤動作として初めて表に出る
+      - run: pnpm typecheck
 
       - run: pnpm lint
 

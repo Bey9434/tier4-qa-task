@@ -8,7 +8,7 @@ import {
   loginError,
 } from "../pages/login.page";
 import { pageHeading } from "../pages/account.page";
-import { LOGIN_ERROR_MESSAGES, MY_ACCOUNT_HEADING } from "../pages/locator";
+import { LOGIN_ERROR_MESSAGES, MY_ACCOUNT_HEADING } from "../pages/messages";
 import { PATHS } from "../pages/paths";
 import { registerAccount } from "../config/account";
 import type { Account } from "../config/account";
@@ -154,6 +154,8 @@ test.describe("TC-001: ログイン", () => {
       page,
       request,
     }) => {
+      // 登録が無いと落ちるのは #1 だけだが、シナリオごとに登録を省くと
+      // 表に分岐が入り全行が同型でなくなるため、毎回登録して一様性を優先する
       const account = await registerAccount(request);
 
       await test.step("Arrange: ログインページを開く", async () => {
